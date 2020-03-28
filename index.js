@@ -17,9 +17,6 @@ const key =  "supersecret"
 
 app.register(require("fastify-jwt"), { secret: key })
 
-
-// app.register(require('./fastify-plugins/auth-strategy'))
-
 const refreshTokens = {}
 
 const parseAuthForToken = (request) => {
@@ -82,10 +79,17 @@ const users = {
 app.post('/refreshToken', (req, reply) => {
   const { refreshToken } = JSON.parse(req.body)
 
-  const decoded = app.jwt.verify(refreshToken) // check refresh token still valid
-  // check we have a refresh token for that user? - dont think necessary
-  const token = app.jwt.sign({ id: decoded.id }, {  expiresIn: '3s' }) // create new token
-  reply.send({token})
+  try { 
+    const decoded = app.jwt.verify(refreshToken) // check refresh token still valid
+    // check we have a refreshTokens? for that user? - dont think necessary
+    const token = app.jwt.sign({ id: decoded.id }, {  expiresIn: '3s' }) // create new token
+
+    // todo, logic to update refresh token if access token is valid, and refresh token has expired
+    reply.send({token})
+  } catch (err) {
+    reply.send(err)
+  }
+  
 
 })
 
