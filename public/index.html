@@ -11,6 +11,7 @@
     <div>
         <h2> Access protected endpoints </h2>
         <button id="public">public</button>
+        <button id="protected">all authenticated users</button>
         <button id="admin-page">admin only</button>
         <button id="manager-page">manager & admin</button>
         <button id="user-page">user & admin</button>
@@ -25,15 +26,44 @@
     document.getElementById('manager-page').addEventListener('click', protectedRoute('manager'))
     document.getElementById('user-page').addEventListener('click', protectedRoute('user'))
     document.getElementById('public').addEventListener('click', protectedRoute('public'))
+    document.getElementById('protected').addEventListener('click', protectedRoute('protected'))
 
-    var token = ""
-    function customFetch(url, options = {}) {
-        return fetch(url, {
-            ...options, 
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
+    let token = ""
+    let refreshToken = ""
+    function customFetch(url, options = {} ) {
+        fetch(url, { // fetch url
+                ...options, 
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            .then(status) // check status, throws error
+            .then(json) // turn data into JSON
+            .catch((err) => {
+                // check if we need to refetch the token
+                if(err.statusCode === 401 && err.message === 'Need to refresh token') {
+                    fetch('http://localhost:3000/refreshToken', {
+                        ...options, 
+                        method: 'POST',
+                        body: JSON.stringify({refreshToken}), 
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    })
+                    .then(status)
+                    .then(json)
+                    .then(async data => {
+                        debugger
+                        console.log('access token refreshed')
+                        token = data.token
+                    })
+                    .catch(err => {
+                        debugger
+                        throw err
+                    })
+                }
+                
+            })
     }
 
     function singIn(id) {
@@ -42,6 +72,22 @@
                 .then(res => res.json())
                 .then(data => {
                     token = data.token
+                    refreshToken = data.refreshToken
+                })
+                .catch(err => {
+                    console.log('catch')
+                    console.log(err)
+                })
+        }
+    }
+
+    function userInfo(id) {
+        return function() {
+            customFetch('http://localhost:3000/userInfo')
+                .then(res => res.json())
+                .then(data => {
+                    token = data.token
+                    refreshToken = data.refreshToken
                 })
                 .catch(err => {
                     console.log('catch')
@@ -51,19 +97,23 @@
     }
 
     function protectedRoute(path) {
-        return function() {
-            console.log(path)
+        return async function() {
             customFetch(`http://localhost:3000/${path}`)
-            .then(res => res.json())
-            .then(data => {
-                console.log(data)
-            })
-            .catch(err => {
-                console.log('catch')
-                console.log(err)
-            })
+                .then(data => { console.log(data) })
         }
-        
+    }
+
+    async function status(response) {
+        if (response.status >= 200 && response.status < 300) {
+            return Promise.resolve(response)
+        } else {
+            let json = await response.json()
+            return Promise.reject(json)
+        }
+    }
+
+    function json(response) {
+        return response.json()
     }
 </script>
 </body>
