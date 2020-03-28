@@ -15,6 +15,7 @@
         <button id="admin-page">admin only</button>
         <button id="manager-page">manager & admin</button>
         <button id="user-page">user & admin</button>
+        <button id="user-info">current user info</button>
     </div>
     
 
@@ -27,6 +28,7 @@
     document.getElementById('user-page').addEventListener('click', protectedRoute('user'))
     document.getElementById('public').addEventListener('click', protectedRoute('public'))
     document.getElementById('protected').addEventListener('click', protectedRoute('protected'))
+    document.getElementById('user-info').addEventListener('click', protectedRoute('userInfo'))
 
     let token = ""
     let refreshToken = ""
@@ -75,22 +77,6 @@
                     refreshToken = data.refreshToken
                 })
                 .catch(err => {
-                    console.log('catch')
-                    console.log(err)
-                })
-        }
-    }
-
-    function userInfo(id) {
-        return function() {
-            customFetch('http://localhost:3000/userInfo')
-                .then(res => res.json())
-                .then(data => {
-                    token = data.token
-                    refreshToken = data.refreshToken
-                })
-                .catch(err => {
-                    console.log('catch')
                     console.log(err)
                 })
         }

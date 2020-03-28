@@ -79,16 +79,9 @@ const users = {
   },
 }
 
-app.get('/userInfo', async (req, reply) => {
-  const payload = req.user
-  console.log(payload)
-  console.log(users[payload.userId])
-  reply.send(users[payload.userId]) 
-})
-
 app.post('/refreshToken', (req, reply) => {
   const { refreshToken } = JSON.parse(req.body)
-  
+
   const decoded = app.jwt.verify(refreshToken) // check refresh token still valid
   // check we have a refresh token for that user? - dont think necessary
   const token = app.jwt.sign({ id: decoded.id }, {  expiresIn: '3s' }) // create new token
@@ -104,6 +97,13 @@ app.post('/signin', async (req, reply) => {
   refreshTokens[refreshToken] = id
   reply.send({ token, refreshToken })
 })
+
+app.get('/userInfo', { preValidation: [app.authenticated] }, async (req, reply) => {
+  console.log(req.user)
+  console.log(users[req.user.id])
+  reply.send(users[req.user.id]) 
+})
+
 
 app.get('/protected',{ preValidation: [app.authenticated] },  async (req, reply) => {
   console.log('==== route ====')
