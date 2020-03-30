@@ -1,9 +1,5 @@
 const fastify = require('fastify')
 const path = require('path')
-const {
-  BadRequest,
-  Unauthorized
-} = require('http-errors')
 
 const app = fastify()
 
@@ -19,42 +15,12 @@ app.register(require("fastify-jwt"), { secret: key })
 
 const refreshTokens = {}
 
-const parseAuthForToken = (request) => {
-  let token
-  if (request.headers && request.headers.authorization) {
-    const parts = request.headers.authorization.split(' ')
-    if (parts.length === 2) {
-      const scheme = parts[0]
-      token = parts[1]
-      if (!/^Bearer$/i.test(scheme)) {
-        throw new BadRequest('cannot parse auth bearer')
-      }
-    }
-    return token
-  }
-  throw new BadRequest('Cannot read authorization header')
-}
-
 app.decorate("authenticated", async (request, reply)  => {
-  console.log('====== authenticated ===========')
   try {
     // decode without veriftying here
-    const token = parseAuthForToken(request)
-    await request.jwtVerify((err) => {
-      if(err) { 
-        let rethrow = true
-        if(err.message = 'Authorization token expired') {
-          const payload = app.jwt.decode(token)
-          const threeSecondsAgo =  Math.floor(new Date() / 1000) - 3
-          if(payload.exp > threeSecondsAgo) { // expired less than 3 seconds ago
-            throw Unauthorized('Need to refresh token')
-          }
-        }   
-        if(rethrow) throw err 
-      }
-    })
+    await request.jwtVerify()
   } catch (err) {
-    console.log(err.name)
+    console.log('access token expired')
     reply.send(err)
   }
   return
@@ -81,12 +47,10 @@ app.post('/refreshToken', (req, reply) => {
 
   try { 
     const decoded = app.jwt.verify(refreshToken) // check refresh token still valid
-    // check we have a refreshTokens? for that user? - dont think necessary
-    const token = app.jwt.sign({ id: decoded.id }, {  expiresIn: '3s' }) // create new token
-
-    // todo, logic to update refresh token if access token is valid, and refresh token has expired
-    reply.send({token})
+    const accessToken = app.jwt.sign({ id: decoded.id }, {  expiresIn: '3s' }) // create new access token
+    reply.send({accessToken})
   } catch (err) {
+    console.log('refresh token expired')
     reply.send(err)
   }
   

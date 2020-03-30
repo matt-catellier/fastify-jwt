@@ -47,7 +47,7 @@
             .then(json) // turn data into JSON
             .catch((err) => {
                 // check if we need to refetch the token
-                if(err.statusCode === 401 && err.message === 'Need to refresh token') {
+                if(err.statusCode === 401 && err.message === 'Authorization token expired') {
                     fetch('http://localhost:3000/refreshToken', {
                         ...options, 
                         method: 'POST',
@@ -59,9 +59,7 @@
                     .then(status)
                     .then(json)
                     .then(async data => {
-                        debugger
-                        console.log('access token refreshed')
-                        window.localStorage.setItem('accessToken', data.token)
+                        window.localStorage.setItem('accessToken', data.accessToken)
                         customFetch(url, options)
                     })
                     .catch(err => {
