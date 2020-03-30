@@ -33,7 +33,7 @@ const users = {
     type: 'admin'
   },
   'manager': {
-    name: 'meaghan',
+    name: 'molly',
     type: 'user'
   },
   'user': {
